@@ -193,13 +193,13 @@ class ToolPanel(QWidget):
     # Line Width Handlers
     def on_line_width_changed(self, width):
         self.line_width_edit.setText(str(width))
-        self.line_width_changed.emit(width)
+        self.line_width_changed.emit(width+1)
         
     def on_line_width_text_changed(self, text):
         try:
             width = int(text)
             self.line_width_slider.setValue(width)
-            self.line_width_changed.emit(width)
+            self.line_width_changed.emit(width+1)
         except ValueError:
             pass
         
