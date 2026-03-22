@@ -103,19 +103,25 @@ class CanvasPanel(QOpenGLWidget):
     # ==========================================
     def mousePressEvent(self, event):
         if self.current_tool:
-            self.current_tool.start_drawing(event.position())
+            # Pass keyboard modifiers to the tool
+            modifiers = event.modifiers()
+            self.current_tool.start_drawing(event.position(), modifiers)
             self.update() # สั่งให้ paintGL ทำงานเพื่อวาดจุดเริ่มต้น
 
     def mouseMoveEvent(self, event):
         # ทำงานเฉพาะตอนที่กดเมาส์ค้างไว้ (is_drawing = True)
         if self.current_tool and getattr(self.current_tool, 'is_drawing', False):
-            self.current_tool.continue_drawing(event.position())
+            # Pass keyboard modifiers to the tool
+            modifiers = event.modifiers()
+            self.current_tool.continue_drawing(event.position(), modifiers)
             self.update() # สั่งให้ paintGL อัปเดตภาพพรีวิวตามเมาส์
 
     def mouseReleaseEvent(self, event):
         if self.current_tool and getattr(self.current_tool, 'is_drawing', False):
+            # Pass keyboard modifiers to the tool
+            modifiers = event.modifiers()
             # 1. รับข้อมูลกลุ่มพิกเซลจากการคำนวณของ Algorithm เมื่อวาดเสร็จ
-            drawn_data = self.current_tool.finish_drawing(event.position())
+            drawn_data = self.current_tool.finish_drawing(event.position(), modifiers)
             
             # 2. ถ้ายกเมาส์แล้วมีข้อมูล (เช่น ลากเส้นเสร็จแล้ว) ให้บันทึกลง History
             if drawn_data is not None and len(drawn_data) > 0:
