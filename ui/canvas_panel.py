@@ -161,7 +161,9 @@ class CanvasPanel(QOpenGLWidget):
     def mouseMoveEvent(self, event):
         # ทำงานเฉพาะตอนที่กดเมาส์ค้างไว้ (is_drawing = True)
         if self.current_tool and getattr(self.current_tool, 'is_drawing', False):
-            self.current_tool.continue_drawing(event.position())
+            # Pass keyboard modifiers to the tool
+            modifiers = event.modifiers()
+            self.current_tool.continue_drawing(event.position(), modifiers)
             self.update() # สั่งให้ paintGL อัปเดตภาพพรีวิวตามเมาส์
 
     def mouseReleaseEvent(self, event):
