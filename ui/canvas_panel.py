@@ -1,4 +1,5 @@
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
+import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
@@ -16,7 +17,7 @@ class CanvasPanel(QOpenGLWidget):
     def __init__(self):
         super().__init__()
         self.current_color = (0, 0, 0) # สีดำเริ่มต้น
-        self.current_width = 1
+        self.current_width = 2
         
         # ระบบ History: เก็บประวัติการวาดที่เสร็จสมบูรณ์แล้วทั้งหมด
         # รูปแบบ: [{'tool_name': 'line', 'color': (0,0,0), 'width': 1, 'data': [(x,y), (x,y), ...]}]
@@ -50,21 +51,30 @@ class CanvasPanel(QOpenGLWidget):
             self.current_tool.render(self.current_color, self.current_width)
             
     def draw_history(self):
-        """เรนเดอร์ข้อมูลพิกเซลทั้งหมดที่ถูกบันทึกไว้ในประวัติ"""
+        """เรนเดอร์ข้อมูลพิกเซลทั้งหมดที่ถูกบันทึกไว้ในประวัติแบบรวดเร็ว (Batch Rendering)"""
+        
+        # เปิดใช้งานโหมดอ่านข้อมูลจาก Array
+        glEnableClientState(GL_VERTEX_ARRAY)
+        
         for item in self.history:
-            # ตั้งค่าสี (ต้องแปลงจาก 0-255 เป็น 0.0-1.0 สำหรับ OpenGL)
- 
             glColor3f(*item['color'])
-            
-            # ตั้งค่าขนาดจุด (ความหนาของเส้น)
             glPointSize(item['width'])
             
-            # วาดจุดทั้งหมดที่ได้จาก Algorithm
-            if item['data']:
-                glBegin(GL_POINTS)
-                for x, y in item['data']:
-                    glVertex2f(x, y)
-                glEnd()
+            data = item['data']
+            if len(data) == 0:
+                continue
+                
+            if not isinstance(data, np.ndarray):
+                data = np.array(data, dtype=np.float32)
+                item['data'] = data
+                
+            # ชี้เป้าให้ OpenGL อ่านข้อมูลจาก Numpy array ทันที
+            glVertexPointer(2, GL_FLOAT, 0, data)
+            # สั่งวาดรวดเดียวจบตามจำนวนข้อมูล
+            glDrawArrays(GL_POINTS, 0, len(data))
+            
+        # ปิดการใช้งานเมื่อวาดเสร็จ
+        glDisableClientState(GL_VERTEX_ARRAY)
         
     def setup_tools(self):
         self.tools = {
@@ -98,6 +108,39 @@ class CanvasPanel(QOpenGLWidget):
             print(f"Canvas: Tool '{tool_name}' ยังไม่ได้ถูกสร้างหรือลงทะเบียน")
             self.current_tool = None
             
+    def get_pixel_color(self, x: int, y: int) -> tuple:
+        """อ่านค่าสีของพิกเซลจากหน้าจอโดยตรง ไม่ต้องวนลูปหาในประวัติ"""
+        canvas_array = self.get_canvas_array()
+        
+        # ตรวจสอบว่าพิกัดที่เมาส์ชี้ อยู่ในขอบเขตหน้าจอหรือไม่
+        h, w = canvas_array.shape[:2]
+        if 0 <= x < w and 0 <= y < h:
+            # ดึงสี RGB ออกมา (0-255)
+            r, g, b = canvas_array[y, x]
+            # OpenGL ในโปรแกรมคุณเก็บสีเป็น 0.0 - 1.0 เราต้องหาร 255.0
+            return (r / 255.0, g / 255.0, b / 255.0)
+            
+        return (1.0, 1.0, 1.0)  # พื้นหลังสีขาว
+
+    def get_canvas_size(self) -> tuple:
+        """คืนขนาดของ canvas"""
+        return (self.width(), self.height())
+    
+    def get_canvas_array(self) -> np.ndarray:
+        """ดึงภาพ Canvas ปัจจุบันออกมาเป็น Numpy Array เพื่อให้ประมวลผลได้เร็วสุดขีด"""
+        # grabFramebuffer() ของ PyQt จะดึงภาพหน้าจอ OpenGL ปัจจุบันออกมาเป็น QImage
+        qimage = self.grabFramebuffer()
+        
+        # ดึงข้อมูลดิบและแปลงเป็น Numpy Array (ความสูง, ความกว้าง, 4 ช่องสี RGBA)
+        ptr = qimage.bits()
+        ptr.setsize(qimage.sizeInBytes())
+        
+        # ปกติภาพที่ได้จะเป็น Format ที่มี 4 channels (RGBA หรือ BGRA ขึ้นอยู่กับระบบ)
+        arr = np.array(ptr, dtype=np.uint8).reshape(qimage.height(), qimage.width(), 4)
+        
+        # คืนค่าเป็น Array (สมมติว่าเอาแค่ RGB ตัด Alpha ทิ้ง)
+        return arr[:, :, :3]
+            
     # ==========================================
     # -- จัดการ Mouse Events --    
     # ==========================================
@@ -114,17 +157,17 @@ class CanvasPanel(QOpenGLWidget):
 
     def mouseReleaseEvent(self, event):
         if self.current_tool and getattr(self.current_tool, 'is_drawing', False):
-            # 1. รับข้อมูลกลุ่มพิกเซลจากการคำนวณของ Algorithm เมื่อวาดเสร็จ
             drawn_data = self.current_tool.finish_drawing(event.position())
             
-            # 2. ถ้ายกเมาส์แล้วมีข้อมูล (เช่น ลากเส้นเสร็จแล้ว) ให้บันทึกลง History
             if drawn_data is not None and len(drawn_data) > 0:
+                # แปลงร่างเป็น Numpy Array ชนิด Float32 ทันที! เพื่อให้พร้อมส่งเข้าการ์ดจอ
+                optimized_data = np.array(drawn_data, dtype=np.float32)
+                
                 self.history.append({
                     'tool_name': self.current_tool.get_tool_name(),
                     'color': self.current_color,
                     'width': self.current_width,
-                    'data': drawn_data
+                    'data': optimized_data  # เก็บแบบ Array แทน
                 })
             
-            # 3. อัปเดตหน้าจอเพื่อย้ายจากการวาด Preview ไปวาดจาก History
             self.update()
