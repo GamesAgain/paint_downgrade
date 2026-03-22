@@ -6,7 +6,6 @@ from OpenGL.GLU import *
 # เดี๋ยวนำเข้า Tool อื่นๆ เพิ่มตรงนี้เมื่อสร้างเสร็จ
 from core.tools.line_tool import LineTool 
 from core.tools.pen_tool import PenTool
-from core.tools.fill_tool import FillTool
 from core.tools.eraser_tool import EraserTool
 from core.tools.dropper_tool import DropperTool
 from core.tools.rectangle_tool import RectangleTool
@@ -79,7 +78,7 @@ class CanvasPanel(QOpenGLWidget):
     def setup_tools(self):
         self.tools = {
             'pen': PenTool(self),
-            'fill': FillTool(self),
+            'fill': None,
             'eraser': EraserTool(self),
             'dropper': DropperTool(self),
             'line': LineTool(self), 
@@ -147,6 +146,16 @@ class CanvasPanel(QOpenGLWidget):
     def mousePressEvent(self, event):
         if self.current_tool:
             self.current_tool.start_drawing(event.position())
+            drawn_data = self.current_tool.start_drawing(event.position())
+            
+            if drawn_data is not None and len(drawn_data) > 0:
+                self.history.append({
+                    'tool_name': self.current_tool.get_tool_name(),
+                    'color': self.current_color,
+                    'width': self.current_width,
+                    'data': drawn_data
+                })
+                
             self.update() # สั่งให้ paintGL ทำงานเพื่อวาดจุดเริ่มต้น
 
     def mouseMoveEvent(self, event):
@@ -163,9 +172,14 @@ class CanvasPanel(QOpenGLWidget):
                 # แปลงร่างเป็น Numpy Array ชนิด Float32 ทันที! เพื่อให้พร้อมส่งเข้าการ์ดจอ
                 optimized_data = np.array(drawn_data, dtype=np.float32)
                 
+                color = self.current_color
+                
+                if self.current_tool.get_tool_name() == 'eraser':
+                    color = (1.0, 1.0, 1.0)  # สีขาวสำหรับลบ
+                    
                 self.history.append({
                     'tool_name': self.current_tool.get_tool_name(),
-                    'color': self.current_color,
+                    'color': color,
                     'width': self.current_width,
                     'data': optimized_data  # เก็บแบบ Array แทน
                 })
