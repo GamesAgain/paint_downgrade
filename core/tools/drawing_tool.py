@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional, Any
 from PyQt6.QtCore import QPointF
+from PyQt6.QtCore import Qt
 
 class DrawingTool(ABC):
     """
@@ -14,7 +15,7 @@ class DrawingTool(ABC):
         self.start_point: Optional[QPointF] = None
     
     @abstractmethod
-    def start_drawing(self, point: QPointF) -> None:
+    def start_drawing(self, point: QPointF, modifiers=None) -> None:
         """
         ทำงานเมื่อ: ผู้ใช้ 'คลิกเมาส์ครั้งแรก' ลงบน Canvas
         หน้าที่หลัก: 
@@ -24,7 +25,7 @@ class DrawingTool(ABC):
         pass
     
     @abstractmethod
-    def continue_drawing(self, point: QPointF) -> None:
+    def continue_drawing(self, point: QPointF, modifiers=None) -> None:
         """
         ทำงานเมื่อ: ผู้ใช้ 'กดเมาส์ค้างแล้วลาก' ไปมาบน Canvas
         หน้าที่หลัก:
@@ -34,7 +35,7 @@ class DrawingTool(ABC):
         pass
     
     @abstractmethod
-    def finish_drawing(self, point: QPointF) -> Optional[Any]:
+    def finish_drawing(self, point: QPointF, modifiers=None) -> Optional[Any]:
         """
         ทำงานเมื่อ: ผู้ใช้ 'ปล่อยคลิกเมาส์'
         หน้าที่หลัก:
