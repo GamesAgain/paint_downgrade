@@ -34,7 +34,7 @@ class DropperTool(DrawingTool):
     #     print(f"Canvas size: {self.canvas.width()} x {self.canvas.height()}")
     #     print(f"Pixel color before: {color.getRgb()}")
 
-    def start_drawing(self, point):
+    def start_drawing(self, point, modifiers=None):
         image = self.canvas.grabFramebuffer()
         
         scale_x = image.width() / self.canvas.width()
@@ -62,10 +62,10 @@ class DropperTool(DrawingTool):
         print(f"Canvas size: {self.canvas.width()} x {self.canvas.height()}")
         print(f"Pixel color before: {color.getRgb()}")
 
-    def continue_drawing(self, point):
+    def continue_drawing(self, point, modifiers=None):
         pass
 
-    def finish_drawing(self, point):
+    def finish_drawing(self, point, modifiers=None):
         pass
 
     def render(self, color: tuple, width: int) -> None:

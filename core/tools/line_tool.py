@@ -17,19 +17,19 @@ class LineTool(DrawingTool):
     def get_tool_name(self) -> str:
         return 'line'
 
-    def start_drawing(self, point: QPointF) -> None:
+    def start_drawing(self, point: QPointF, modifiers=None) -> None:
         """เริ่มวาด: บันทึกจุดเริ่มต้นของเส้น"""
         self.is_drawing = True
         self.start_point = point
         self.current_point = point
 
-    def continue_drawing(self, point: QPointF) -> None:
+    def continue_drawing(self, point: QPointF, modifiers=None) -> None:
         """อัปเดตพรีวิว: อัปเดตจุดปัจจุบันเพื่อแสดงเส้นพรีวิว"""
         if not self.is_drawing or self.start_point is None:
             return
         self.current_point = point
 
-    def finish_drawing(self, point: QPointF) -> Optional[List[Tuple[float, float]]]:
+    def finish_drawing(self, point: QPointF, modifiers=None) -> Optional[List[Tuple[float, float]]]:
         """จบการวาด: คำนวณเส้นตรงสุดท้ายและส่งข้อมูลพิกเซล"""
         if not self.is_drawing or self.start_point is None:
             return None

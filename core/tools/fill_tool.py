@@ -27,7 +27,7 @@ class FillTool(DrawingTool):
 
         return new_mask
 
-    def start_drawing(self, point: QPointF) -> Optional[List[Tuple[float, float]]]:
+    def start_drawing(self, point: QPointF, modifiers=None) -> Optional[List[Tuple[float, float]]]:
         x = int(point.x())
         y = int(point.y())
 
@@ -69,10 +69,10 @@ class FillTool(DrawingTool):
 
         return self.flood_fill_numpy(img, line_mask, x, y, target_color, fill_color)
 
-    def continue_drawing(self, point):
+    def continue_drawing(self, point, modifiers=None):
         pass
 
-    def finish_drawing(self, point):
+    def finish_drawing(self, point, modifiers=None):
         pass
 
     # flood fill แบบ BFS

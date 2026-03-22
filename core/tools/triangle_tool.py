@@ -20,20 +20,20 @@ class TriangleTool(DrawingTool):
     def get_tool_name(self) -> str:
         return 'triangle'
 
-    def start_drawing(self, point: QPointF) -> None:
+    def start_drawing(self, point: QPointF, modifiers=None) -> None:
         """เริ่มวาด: บันทึกจุดเริ่มต้น"""
         self.is_drawing = True
         self.start_point = point
         self.current_point = point
         self.triangle_points = []
 
-    def continue_drawing(self, point: QPointF) -> None:
+    def continue_drawing(self, point: QPointF, modifiers=None) -> None:
         """ยังคงวาด: อัปเดตจุดปัจจุบันขณะลากเมาส์"""
         if not self.is_drawing:
             return
         self.current_point = point
 
-    def finish_drawing(self, point: QPointF) -> Optional[List[Tuple[float, float]]]:
+    def finish_drawing(self, point: QPointF, modifiers=None) -> Optional[List[Tuple[float, float]]]:
         """จบการวาด: คำนวณ 3 จุดของสามเหลี่ยม และวาดขอบเท่านั้น (ไม่มี fill)"""
         if not self.is_drawing or self.start_point is None or self.current_point is None:
             return None

@@ -17,7 +17,7 @@ class EraserTool(DrawingTool):
     def get_tool_name(self) -> str:
         return 'eraser'
 
-    def start_drawing(self, point: QPointF) -> None:
+    def start_drawing(self, point: QPointF, modifiers=None) -> None:
         """เริ่มวาด: รีเซ็ตเส้นใหม่และเก็บจุดแรก"""
         self.is_drawing = True
         self.stroke_points = [] # เคลียร์ข้อมูลพิกเซลของเส้นเก่า
@@ -26,7 +26,7 @@ class EraserTool(DrawingTool):
         # เก็บจุดเริ่มต้นลงไปใน List
         self.stroke_points.append((float(int(point.x())), float(int(point.y()))))
 
-    def continue_drawing(self, point: QPointF) -> None:
+    def continue_drawing(self, point: QPointF, modifiers=None) -> None:
         """วาดต่อ: ลากเมาส์ไปเรื่อยๆ เติมเต็มช่องว่างด้วย Bresenham"""
         if not self.is_drawing or self.last_point is None:
             return
@@ -40,7 +40,7 @@ class EraserTool(DrawingTool):
         # อัปเดตจุดล่าสุด
         self.last_point = point
 
-    def finish_drawing(self, point: QPointF) -> Optional[List[Tuple[float, float]]]:
+    def finish_drawing(self, point: QPointF, modifiers=None) -> Optional[List[Tuple[float, float]]]:
         """จบการวาด: วาด segment สุดท้ายและส่งข้อมูลให้ Canvas"""
         if not self.is_drawing or self.last_point is None:
             return None

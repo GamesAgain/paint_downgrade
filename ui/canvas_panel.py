@@ -6,6 +6,7 @@ from OpenGL.GLU import *
 # เดี๋ยวนำเข้า Tool อื่นๆ เพิ่มตรงนี้เมื่อสร้างเสร็จ
 from core.tools.line_tool import LineTool 
 from core.tools.pen_tool import PenTool
+from core.tools.fill_tool import FillTool
 from core.tools.eraser_tool import EraserTool
 from core.tools.dropper_tool import DropperTool
 from core.tools.rectangle_tool import RectangleTool
@@ -78,7 +79,7 @@ class CanvasPanel(QOpenGLWidget):
     def setup_tools(self):
         self.tools = {
             'pen': PenTool(self),
-            'fill': None,
+            'fill': FillTool(self),
             'eraser': EraserTool(self),
             'dropper': DropperTool(self),
             'line': LineTool(self), 
@@ -145,8 +146,8 @@ class CanvasPanel(QOpenGLWidget):
     # ==========================================
     def mousePressEvent(self, event):
         if self.current_tool:
-            self.current_tool.start_drawing(event.position())
-            drawn_data = self.current_tool.start_drawing(event.position())
+            modifiers = event.modifiers()
+            drawn_data = self.current_tool.start_drawing(event.position(), modifiers)
             
             if drawn_data is not None and len(drawn_data) > 0:
                 self.history.append({
@@ -168,7 +169,8 @@ class CanvasPanel(QOpenGLWidget):
 
     def mouseReleaseEvent(self, event):
         if self.current_tool and getattr(self.current_tool, 'is_drawing', False):
-            drawn_data = self.current_tool.finish_drawing(event.position())
+            modifiers = event.modifiers()
+            drawn_data = self.current_tool.finish_drawing(event.position(), modifiers)
             
             if drawn_data is not None and len(drawn_data) > 0:
                 # แปลงร่างเป็น Numpy Array ชนิด Float32 ทันที! เพื่อให้พร้อมส่งเข้าการ์ดจอ
