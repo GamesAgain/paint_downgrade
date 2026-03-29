@@ -9,31 +9,6 @@ class DropperTool(DrawingTool):
     def get_tool_name(self) -> str:
         return 'dropper'
 
-    # def start_drawing(self, point):
-    #     image = self.canvas.grabFramebuffer()
-        
-    #     x = int(point.x())
-    #     y = int(point.y())
-        
-    #     # หากสี ไม่ตรง ลองเซ็ก Y-axis
-    #     # y = image.height() - int(point.y())
-        
-    #     if x < 0 or y < 0 or x >= image.width() or y >= image.height():
-    #         return
-        
-    #     color = QColor(image.pixel(x, y))
-        
-    #     r = color.red()
-    #     g = color.green()
-    #     b = color.blue()
-        
-    #     self.canvas.current_color = (r, g, b)
-    #     print(f"Picked color: {r}, {g}, {b}")
-    #     print(f"Point clicked: {point.x()}, {point.y()}")
-    #     print(f"Image size: {image.width()} x {image.height()}")
-    #     print(f"Canvas size: {self.canvas.width()} x {self.canvas.height()}")
-    #     print(f"Pixel color before: {color.getRgb()}")
-
     def start_drawing(self, point, modifiers=None):
         image = self.canvas.grabFramebuffer()
         
@@ -55,6 +30,8 @@ class DropperTool(DrawingTool):
             
         self.canvas.current_color = picked_color
         self.canvas.on_color_changed(picked_color)
+        
+        self.canvas.color_picked_from_canvas.emit(picked_color)
         
         print(f"Picked color: {r}, {g}, {b}")
         print(f"Point clicked: {point.x()}, {point.y()}")

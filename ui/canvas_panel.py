@@ -1,4 +1,5 @@
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
+from PyQt6.QtCore import pyqtSignal, Qt, QPointF
 import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -13,7 +14,12 @@ from core.tools.rectangle_tool import RectangleTool
 from core.tools.circle_tool import CircleTool
 from core.tools.triangle_tool import TriangleTool
 
+# ขนาดของ fill tool
+FILL_WIDTH = 2
+
 class CanvasPanel(QOpenGLWidget):
+    color_picked_from_canvas = pyqtSignal(tuple)
+    
     def __init__(self):
         super().__init__()
         self.current_color = (0, 0, 0) # สีดำเริ่มต้น
@@ -22,6 +28,8 @@ class CanvasPanel(QOpenGLWidget):
         # ระบบ History: เก็บประวัติการวาดที่เสร็จสมบูรณ์แล้วทั้งหมด
         # รูปแบบ: [{'tool_name': 'line', 'color': (0,0,0), 'width': 1, 'data': [(x,y), (x,y), ...]}]
         self.history = [] 
+        self.redo_history = []  # <--- เพิ่ม Stack สำหรับ Redo
+        self.zoom_factor = 1.0  # <--- เพิ่มอัตราส่วนการซูม
         
         self.tools = {}
         self.current_tool = None
@@ -42,6 +50,8 @@ class CanvasPanel(QOpenGLWidget):
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT)
         glLoadIdentity()
+        
+        glScalef(self.zoom_factor, self.zoom_factor, 1.0) # ซูม
         
         # 1. วาดสิ่งที่เคยวาดเสร็จไปแล้ว (History)
         self.draw_history()
@@ -146,14 +156,19 @@ class CanvasPanel(QOpenGLWidget):
     # ==========================================
     def mousePressEvent(self, event):
         if self.current_tool:
+            self.redo_history.clear()
             modifiers = event.modifiers()
             drawn_data = self.current_tool.start_drawing(event.position(), modifiers)
             
+            # --- บังคับขนาดเป็น 1 ถ้าเป็น Fill Tool ---
+            tool_name = self.current_tool.get_tool_name()
+            save_width = FILL_WIDTH if tool_name == 'fill' else self.current_width
+            
             if drawn_data is not None and len(drawn_data) > 0:
                 self.history.append({
-                    'tool_name': self.current_tool.get_tool_name(),
+                    'tool_name': tool_name,
                     'color': self.current_color,
-                    'width': self.current_width,
+                    'width': save_width,
                     'data': drawn_data
                 })
                 
@@ -176,16 +191,38 @@ class CanvasPanel(QOpenGLWidget):
                 # แปลงร่างเป็น Numpy Array ชนิด Float32 ทันที! เพื่อให้พร้อมส่งเข้าการ์ดจอ
                 optimized_data = np.array(drawn_data, dtype=np.float32)
                 
+                tool_name = self.current_tool.get_tool_name()
                 color = self.current_color
                 
-                if self.current_tool.get_tool_name() == 'eraser':
+                if tool_name == 'eraser':
                     color = (1.0, 1.0, 1.0)  # สีขาวสำหรับลบ
                     
+                save_width = FILL_WIDTH if tool_name == 'fill' else self.current_width
+                
                 self.history.append({
                     'tool_name': self.current_tool.get_tool_name(),
                     'color': color,
-                    'width': self.current_width,
+                    'width': save_width,
                     'data': optimized_data  # เก็บแบบ Array แทน
                 })
             
+            self.update()
+            
+    # ==========================================
+    # -- จัดการ History / Undo / Redo / Zoom --    
+    # ==========================================
+    def clear_history(self):
+        self.history.clear()
+        self.redo_history.clear()
+        self.zoom_factor = 1.0
+        self.update()
+        
+    def undo(self):
+        if self.history:
+            self.redo_history.append(self.history.pop())
+            self.update()
+            
+    def redo(self):
+        if self.redo_history:
+            self.history.append(self.redo_history.pop())
             self.update()
